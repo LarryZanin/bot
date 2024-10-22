@@ -22,7 +22,7 @@ def filter_ads(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
 
     # Проверяем, содержится ли в тексте одно из запрещённых слов
-    if any(keyword in message_text for keyword in BLOCKED_KEYWORDS) and user_id not in EXCLUDED_USERS:
+    if (any(keyword in message_text for keyword in BLOCKED_KEYWORDS) or update.message.photo or update.message.document or update.message.video) and user_id not in EXCLUDED_USERS:
         # Удаляем сообщение
         update.message.delete()
 
@@ -37,8 +37,11 @@ def filter_ads(update: Update, context: CallbackContext) -> None:
         # context.bot.send_message(chat_id, f"Пользователь {update.message.from_user.full_name} ({user_id}) заблокирован за рекламу.")
         
         # Пересылаем текст сообщения администратору
+       if message_text:
         context.bot.send_message(ADMIN_ID, f"Заблокированный пользователь: {update.message.from_user.full_name} (ID: {user_id})\n"
                                            f"Текст сообщения: {update.message.text}")
+       else:
+            context.bot.send_message(ADMIN_ID, f"Заблокированный пользователь: {update.message.from_user.full_name} (ID: {user_id}) отправил файл или изображение.")
 
 def main():
     # Используйте токен вашего бота
@@ -47,8 +50,8 @@ def main():
     # Получаем диспетчер для регистрации обработчиков
     dispatcher = updater.dispatcher
 
-    # Обрабатываем все текстовые сообщения
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, filter_ads))
+    # Обрабатываем текстовые сообщения, изображения и документы
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command | Filters.photo | Filters.document | Filters.video, filter_ads))
 
     # Запускаем бота
     updater.start_polling()

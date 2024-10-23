@@ -14,6 +14,9 @@ ADMIN_ID = 1569044523  # ID пользователя, которому бот б
 # Путь к файлу для хранения списка запрещенных слов
 BLOCKED_KEYWORDS_FILE = "blocked_keywords.txt"
 
+# Путь к папке для хранения файлов
+DOWNLOAD_PATH = "/root/bot/"
+
 # Функция для обновления списка запрещённых слов из файла
 def update_blocked_keywords(context: CallbackContext):
     global BLOCKED_KEYWORDS
@@ -67,7 +70,12 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
         if user_id == ADMIN_ID and update.message.chat.type == 'private':
             # Скачиваем файл
             file = update.message.document.get_file()
-            file.download(BLOCKED_KEYWORDS_FILE)
+            # Создаем папку, если она не существует
+            os.makedirs(DOWNLOAD_PATH, exist_ok=True)
+            # Полный путь к файлу
+            file_path = os.path.join(DOWNLOAD_PATH, update.message.document.file_name)
+            # Сохраняем файл по указанному пути
+            file.download(file_path)
 
             # Обновляем список запрещённых слов
             update_blocked_keywords(context)
@@ -75,7 +83,7 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
             # Подтверждаем успешное обновление списка
             context.bot.send_message(
                 chat_id=ADMIN_ID, 
-                text="Файл успешно загружен и список запрещённых слов обновлён."
+                text=f"Файл успешно загружен в {file_path} и список запрещённых слов обновлён."
             )
 def main():
     # Используйте токен вашего бота

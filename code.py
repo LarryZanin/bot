@@ -15,7 +15,7 @@ ADMIN_ID = 1569044523  # ID пользователя, которому бот б
 BLOCKED_KEYWORDS_FILE = "blocked_keywords.txt"
 
 # Функция для обновления списка запрещённых слов из файла
-def update_blocked_keywords():
+def update_blocked_keywords(context: CallbackContext):
     global BLOCKED_KEYWORDS
     try:
         with open(BLOCKED_KEYWORDS_FILE, 'r', encoding='utf-8') as file:
@@ -32,7 +32,6 @@ def update_blocked_keywords():
             chat_id=ADMIN_ID, 
             text=f"Файл {BLOCKED_KEYWORDS_FILE} не найден. Используется пустой список."
         )
-
 
 # Функция для проверки сообщений на наличие рекламы
 def filter_ads(update: Update, context: CallbackContext) -> None:

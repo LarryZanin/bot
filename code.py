@@ -18,11 +18,11 @@ ADMIN_ID = 1569044523  # ID пользователя, которому бот б
 # Функция для проверки сообщений на наличие рекламы
 def filter_ads(update: Update, context: CallbackContext) -> None:
     # Получаем текст сообщения и ID пользователя
-    message_text = update.message.text.lower()
+    message_text = update.message.text.lower() if update.message.text else ""
     user_id = update.message.from_user.id
 
     # Проверяем, содержится ли в тексте одно из запрещённых слов
-    if (any(keyword in message_text for keyword in BLOCKED_KEYWORDS) or update.message.photo or update.message.document or update.message.video) and user_id not in EXCLUDED_USERS:
+    if (any(keyword in message_text for keyword in BLOCKED_KEYWORDS) or update.message.photo or update.message.document or update.message.video or update.message.forward_date) and user_id not in EXCLUDED_USERS:
         # Удаляем сообщение
         update.message.delete()
 
@@ -35,14 +35,10 @@ def filter_ads(update: Update, context: CallbackContext) -> None:
 
         # Логируем сообщение о спаме (или отправляем сообщение о спаме в другой чат)
         # context.bot.send_message(chat_id, f"Пользователь {update.message.from_user.full_name} ({user_id}) заблокирован за рекламу.")
-        
+
         # Пересылаем текст сообщения администратору
-       if message_text:
         context.bot.send_message(ADMIN_ID, f"Заблокированный пользователь: {update.message.from_user.full_name} (ID: {user_id})\n"
                                            f"Текст сообщения: {update.message.text}")
-       else:
-            context.bot.send_message(ADMIN_ID, f"Заблокированный пользователь: {update.message.from_user.full_name} (ID: {user_id}) отправил файл или изображение.")
-
 def main():
     # Используйте токен вашего бота
     updater = Updater("7878820851:AAEBsy6e_crb-QV_e-nlyZ2KISwDGadcwwU")
@@ -51,7 +47,7 @@ def main():
     dispatcher = updater.dispatcher
 
     # Обрабатываем текстовые сообщения, изображения и документы
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command | Filters.photo | Filters.document | Filters.video, filter_ads))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command | Filters.photo | Filters.document | Filters.video | Filters.forwarded, filter_ads))
 
     # Запускаем бота
     updater.start_polling()

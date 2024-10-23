@@ -1,5 +1,6 @@
 from telegram import Update, ChatPermissions
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
+import os
 
 # Список запрещённых слов и фраз, которые могут указывать на рекламу
 BLOCKED_KEYWORDS = []
@@ -20,9 +21,18 @@ def update_blocked_keywords():
         with open(BLOCKED_KEYWORDS_FILE, 'r', encoding='utf-8') as file:
             # Читаем файл и обновляем список запрещённых слов
             BLOCKED_KEYWORDS = [line.strip().lower() for line in file.readlines()]
-        print("Список запрещенных слов обновлен:", BLOCKED_KEYWORDS)
+            
+        # Отправляем уведомление администратору об обновлении списка
+        context.bot.send_message(
+            chat_id=ADMIN_ID, 
+            text=f"Список запрещённых слов обновлён. Текущее количество слов: {len(BLOCKED_KEYWORDS)}."
+        )
     except FileNotFoundError:
-        print(f"Файл {BLOCKED_KEYWORDS_FILE} не найден. Используется пустой список.")
+        context.bot.send_message(
+            chat_id=ADMIN_ID, 
+            text=f"Файл {BLOCKED_KEYWORDS_FILE} не найден. Используется пустой список."
+        )
+
 
 # Функция для проверки сообщений на наличие рекламы
 def filter_ads(update: Update, context: CallbackContext) -> None:
@@ -48,7 +58,8 @@ def filter_ads(update: Update, context: CallbackContext) -> None:
         # Пересылаем текст сообщения администратору
         context.bot.send_message(ADMIN_ID, f"Заблокированный пользователь: {update.message.from_user.full_name} (ID: {user_id})\n"
                                            f"Текст сообщения: {update.message.text}")
-      # Функция для получения и обработки .txt файла от администратора
+        
+# Функция для получения и обработки .txt файла от администратора
 def handle_admin_file(update: Update, context: CallbackContext) -> None:
     if update.message.document and update.message.document.file_name.endswith('.txt'):
         user_id = update.message.from_user.id
@@ -60,11 +71,13 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
             file.download(BLOCKED_KEYWORDS_FILE)
 
             # Обновляем список запрещённых слов
-            update_blocked_keywords()
+            update_blocked_keywords(context)
 
-            # Подтверждаем обновление списка
-            context.bot.send_message(chat_id=ADMIN_ID, text="Список запрещённых слов обновлён.")
-          
+            # Подтверждаем успешное обновление списка
+            context.bot.send_message(
+                chat_id=ADMIN_ID, 
+                text="Файл успешно загружен и список запрещённых слов обновлён."
+            )
 def main():
     # Используйте токен вашего бота
     updater = Updater("7878820851:AAEBsy6e_crb-QV_e-nlyZ2KISwDGadcwwU")
@@ -84,7 +97,7 @@ def main():
     updater.start_polling()
   
     # Загружаем начальный список запрещённых слов
-    update_blocked_keywords()
+    update_blocked_keywords(updater.bot)
 
     # Ожидаем завершения работы
     updater.idle()
